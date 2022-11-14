@@ -1,11 +1,15 @@
 
 import logging
 import os
+import random
 
 from dotenv import load_dotenv
-from telegram import ForceReply, ParseMode, ReplyKeyboardMarkup, Update
+from telegram import (ForceReply, ParseMode, ReplyKeyboardMarkup,
+                      ReplyKeyboardRemove, Update)
 from telegram.ext import (CallbackContext, CommandHandler, Filters,
                           MessageHandler, Updater)
+from main import parse_quiz_from_file
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -13,6 +17,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+
+questions = parse_quiz_from_file('quiz-questions/120br.txt')
 
 def start(update: Update, context: CallbackContext):
     user = update.effective_user
@@ -35,6 +41,19 @@ def start(update: Update, context: CallbackContext):
     )
 
 
+def clear(update: Update, context: CallbackContext):
+    context.bot.send_message(chat_id=update.message.chat_id,
+                     text="Очищено!",
+                     reply_markup=ReplyKeyboardRemove())
+
+
+def ask_question(update: Update, context: CallbackContext):
+    if update.message.text == 'Новый вопрос':
+        question_num, question = random.choice(list(questions.items()))
+        answer = questions[question_num]
+        update.message.reply_text(question)
+
+
 def get_main_menu():
     custom_keyboard = [
         ['Новый вопрос', 'Сдаться'],
@@ -45,15 +64,17 @@ def get_main_menu():
 
 def main():
     load_dotenv()
+        
     tg_bot_token = os.environ["TG_BOT_TOKEN"]
     updater = Updater(tg_bot_token)
 
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CommandHandler("help", help_command))
-
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, start))
+    # dispatcher.add_handler(CommandHandler("help", help_command))
+    dispatcher.add_handler(CommandHandler("clear", clear))
+    dispatcher.add_handler(MessageHandler(Filters.text, ask_question))
+   # dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, start))
 
     updater.start_polling()
 
