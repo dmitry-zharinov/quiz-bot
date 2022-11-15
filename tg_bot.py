@@ -3,13 +3,14 @@ import logging
 import os
 import random
 
+import redis
 from dotenv import load_dotenv
 from telegram import (ForceReply, ParseMode, ReplyKeyboardMarkup,
                       ReplyKeyboardRemove, Update)
 from telegram.ext import (CallbackContext, CommandHandler, Filters,
                           MessageHandler, Updater)
-from main import parse_quiz_from_file
 
+from main import parse_quiz_from_file
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -48,10 +49,18 @@ def clear(update: Update, context: CallbackContext):
 
 
 def ask_question(update: Update, context: CallbackContext):
+    db = context.bot_data["db"]
+    
+    logger.info(update.effective_user)
+
     if update.message.text == 'Новый вопрос':
         question_num, question = random.choice(list(questions.items()))
         answer = questions[question_num]
         update.message.reply_text(question)
+        
+        # записать вопрос в БД
+        db.set(update.effective_user.id, question)
+
 
 
 def get_main_menu():
@@ -68,8 +77,13 @@ def main():
     tg_bot_token = os.environ["TG_BOT_TOKEN"]
     updater = Updater(tg_bot_token)
 
+    db = redis.Redis(host=os.environ["REDIS_URL"],
+                     port=os.environ["REDIS_PORT"],
+                     password=os.environ["REDIS_PASSWORD"],)
+
     dispatcher = updater.dispatcher
 
+    dispatcher.bot_data["db"] = db
     dispatcher.add_handler(CommandHandler("start", start))
     # dispatcher.add_handler(CommandHandler("help", help_command))
     dispatcher.add_handler(CommandHandler("clear", clear))
