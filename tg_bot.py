@@ -20,19 +20,19 @@ logger = logging.getLogger(__name__)
 
 QUIZ = 1
 
-
+reply_keyboard = [
+    ['Новый вопрос', 'Сдаться'],
+    ['Мой счёт'],
+]
+reply_markup = ReplyKeyboardMarkup(reply_keyboard)
 
 
 def start(update, context):
-    reply_keyboard = [
-        ['Новый вопрос', 'Сдаться'],
-        ['Мой счёт'],
-    ]
     logger.info("Start bot.")
     update.message.reply_text(
         text='Привет! Я бот для викторин!',
         parse_mode=ParseMode.HTML,
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard)
+        reply_markup=reply_markup
     )
     return QUIZ
 
@@ -46,8 +46,10 @@ def handle_new_question_request(update, context):
 
     logger.info("Question to %s: %s", update.message.from_user.first_name, quiz_item["question"])
     logger.info("Answer: %s", quiz_item["answer"])
+    #logger.info("Comment: %s", quiz_item["comment"])
 
     context.user_data["correct_answer"] = quiz_item["answer"]
+    #context.user_data["comment"] = quiz_item["comment"]
 
     # записать вопрос в БД
     db.set(update.effective_user.id, quiz_item["question"])
@@ -58,18 +60,28 @@ def handle_new_question_request(update, context):
 def handle_solution_attempt(update, context):
     user_answer = update.message.text
     correct_answer = context.user_data["correct_answer"]
-    
+    #comment = context.user_data["comment"]
+
     reply = 'Неправильно… Попробуешь ещё раз?'
     if user_answer.lower() in correct_answer.lower():
-        reply = 'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос»'
+        reply = f"Правильно! Для следующего вопроса нажми «Новый вопрос»"
         del context.user_data["correct_answer"]
-    update.message.reply_text(reply)
+        #del context.user_data["comment"]
+    update.message.reply_text(reply,reply_markup=reply_markup)
     return QUIZ
 
 
 def give_up(update, context):
-    update.message.reply_text('Вы сдались.')
+    correct_answer = context.user_data["correct_answer"]
+    if correct_answer:
+        reply = (
+            f"Правильный ответ: {correct_answer}\n"
+            'Для продолжения нажмите кнопку "Новый вопрос"'
+        )
+        del context.user_data["correct_answer"]
+    update.message.reply_text(reply,reply_markup=reply_markup)
     return QUIZ
+
 
 def stats(update, context):
     update.message.reply_text('Статистика.')

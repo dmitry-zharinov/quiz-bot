@@ -13,6 +13,7 @@ def parse_quiz_from_file(filepath):
 
     with open(filepath, "r", encoding="KOI8-R") as file:    
         for text in file.read().split("\n\n"):
+            print(text)
             if not text:
                 continue
             header, body = text.split("\n", maxsplit=1)
