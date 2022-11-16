@@ -5,10 +5,9 @@ import random
 
 import redis
 from dotenv import load_dotenv
-from telegram import (ForceReply, ParseMode, ReplyKeyboardMarkup,
-                      ReplyKeyboardRemove, Update)
-from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
-                          Filters, MessageHandler, Updater)
+from telegram import ParseMode, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import (CommandHandler, ConversationHandler, Filters,
+                          MessageHandler, Updater)
 
 from main import parse_quiz_from_file
 
@@ -46,10 +45,9 @@ def handle_new_question_request(update, context):
 
     logger.info("Question to %s: %s", update.message.from_user.first_name, quiz_item["question"])
     logger.info("Answer: %s", quiz_item["answer"])
-    #logger.info("Comment: %s", quiz_item["comment"])
 
     context.user_data["correct_answer"] = quiz_item["answer"]
-    #context.user_data["comment"] = quiz_item["comment"]
+    context.user_data["comment"] = quiz_item["comment"]
 
     # записать вопрос в БД
     db.set(update.effective_user.id, quiz_item["question"])
@@ -60,26 +58,34 @@ def handle_new_question_request(update, context):
 def handle_solution_attempt(update, context):
     user_answer = update.message.text
     correct_answer = context.user_data["correct_answer"]
-    #comment = context.user_data["comment"]
+    comment = context.user_data["comment"]
 
     reply = 'Неправильно… Попробуешь ещё раз?'
     if user_answer.lower() in correct_answer.lower():
-        reply = f"Правильно! Для следующего вопроса нажми «Новый вопрос»"
+
+        reply = (
+            f"Правильно!\n"
+            f"{comment}\n"
+            'Для следующего вопроса нажми «Новый вопрос»'
+        )
         del context.user_data["correct_answer"]
-        #del context.user_data["comment"]
-    update.message.reply_text(reply,reply_markup=reply_markup)
+        del context.user_data["comment"]
+
+    update.message.reply_text(reply, reply_markup=reply_markup)
     return QUIZ
 
 
 def give_up(update, context):
     correct_answer = context.user_data["correct_answer"]
+    comment = context.user_data["comment"]
     if correct_answer:
         reply = (
             f"Правильный ответ: {correct_answer}\n"
-            'Для продолжения нажмите кнопку "Новый вопрос"'
+            f"{comment}\n"
+            'Для продолжения нажмите кнопку «Новый вопрос»'
         )
         del context.user_data["correct_answer"]
-    update.message.reply_text(reply,reply_markup=reply_markup)
+    update.message.reply_text(reply, reply_markup=reply_markup)
     return QUIZ
 
 
@@ -103,7 +109,7 @@ def error(bot, update, error):
 
 def main():
     load_dotenv()
-        
+
     updater = Updater(os.environ["TG_BOT_TOKEN"])
 
     db = redis.Redis(host=os.environ["REDIS_URL"],
@@ -115,7 +121,6 @@ def main():
 
     dispatcher.bot_data["db"] = db
     dispatcher.bot_data["quiz"] = quiz
-    logger.info("test.")
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],

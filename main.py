@@ -1,4 +1,3 @@
-from random import randint
 from itertools import count
 
 
@@ -11,9 +10,8 @@ def parse_quiz_from_file(filepath):
     counter = count()
     number = next(counter)
 
-    with open(filepath, "r", encoding="KOI8-R") as file:    
+    with open(filepath, "r", encoding="KOI8-R") as file:
         for text in file.read().split("\n\n"):
-            print(text)
             if not text:
                 continue
             header, body = text.split("\n", maxsplit=1)
@@ -26,7 +24,7 @@ def parse_quiz_from_file(filepath):
             if header.lower().strip().startswith("комментарий"):
                 comment = " ".join(body.split())
 
-            if question and answer:
+            if header.lower().strip().startswith("автор"):
                 quiz[number] = {
                     "question": question,
                     "answer": answer,
@@ -43,9 +41,7 @@ def parse_quiz_from_file(filepath):
 
 def main():
     quiz = parse_quiz_from_file('quiz-questions/120br.txt')
-    for key, val in quiz.items():
-        print(f'key: {key}')
-        print(f'val: {val}')
+    print(quiz)
 
 
 if __name__ == "__main__":
