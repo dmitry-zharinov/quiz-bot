@@ -1,54 +1,118 @@
+import logging
 import os
 import random
 
+import redis
 import vk_api as vk
 from dotenv import load_dotenv
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkEventType, VkLongPoll
 
+from main import parse_quiz_from_file
 
-def echo(event, vk_api):
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
+
+logger = logging.getLogger(__name__)
+
+KEYBOARD = VkKeyboard()
+KEYBOARD.add_button('Новый вопрос', color=VkKeyboardColor.POSITIVE)
+KEYBOARD.add_button('Сдаться', color=VkKeyboardColor.NEGATIVE)
+KEYBOARD.add_line()
+KEYBOARD.add_button('Мой счёт', color=VkKeyboardColor.PRIMARY)
+
+
+
+def send_message(event, vk_api, message):
     vk_api.messages.send(
         user_id=event.user_id,
-        message=event.text,
-        random_id=random.randint(1, 1000)
+        message=message,
+        random_id=random.randint(1, 1000),
+        keyboard=KEYBOARD.get_keyboard(),
     )
 
 
-def send_keyboard(event, vk_api):
-    """ Пример создания клавиатуры для отправки ботом """
-    keyboard = VkKeyboard(one_time=True)
+def start(event, vk_api):
+    logger.info("Start bot.")
+    send_message(event, vk_api, "Привет! Я бот для викторин!")
 
-    keyboard.add_button('Белая кнопка', color=VkKeyboardColor.PRIMARY)
-    keyboard.add_button('Зелёная кнопка', color=VkKeyboardColor.POSITIVE)
 
-    keyboard.add_line()  # Переход на вторую строку
-    keyboard.add_button('Красная кнопка', color=VkKeyboardColor.NEGATIVE)
+def ask_question(event, vk_api, db, quiz):
+    _, quiz_item = random.choice(list(quiz.items()))
+    correct_answer = quiz_item["answer"]
+    question = quiz_item["question"]
 
-    keyboard.add_line()
-    keyboard.add_button('Синяя кнопка', color=VkKeyboardColor.PRIMARY)
+    db.set(f"{event.user_id}_answer", correct_answer)
+    db.set(f"{event.user_id}_comment", quiz_item["comment"])
 
-    vk_api.messages.send(
-        user_id=event.user_id,
-        keyboard=keyboard.get_keyboard(),
-        message='Пример клавиатуры',
-        random_id=random.randint(1, 1000)
-    )
+    send_message(event, vk_api, question)
+    logger.info("Question to %s: %s", event.user_id, question)
+    logger.info("Answer: %s", correct_answer)
+
+
+def check_answer(event, vk_api, db):
+    user_answer = event.text
+    correct_answer = db.get(f"{event.user_id}_answer").decode()
+    message = "Неправильно… Попробуешь ещё раз?"
+    if user_answer.lower() in correct_answer.lower():
+        comment = db.get(f"{event.user_id}_comment").decode()
+        message = (
+            f"Правильно!\n"
+            f"{comment}\n"
+            'Для следующего вопроса нажми «Новый вопрос»'
+        )
+        db.delete(f"{event.user_id}_answer")
+        db.delete(f"{event.user_id}_comment")
+    send_message(event, vk_api, message)
+
+
+def give_up(event, vk_api, db):
+    message = 'Сначала надо задать вопрос. Нажмите кнопку "Новый вопрос"'
+
+    correct_answer = db.get(f"{event.user_id}_answer")
+    if correct_answer:
+        correct_answer = correct_answer.decode()
+        comment = db.get(f"{event.user_id}_comment").decode()
+        message = (
+            f"Правильный ответ: {correct_answer}\n"
+            f"{comment}\n"
+            'Для продолжения нажмите кнопку «Новый вопрос»'
+        )
+        db.delete(f"{event.user_id}_answer")
+        db.delete(f"{event.user_id}_comment")
+    send_message(event, vk_api, message)
+
+
+def show_user_score(event, vk_api, db):
+    send_message(event, vk_api, "Статистика")
 
 
 if __name__ == "__main__":
     load_dotenv()
+
+    db = redis.Redis(host=os.environ["REDIS_URL"],
+                     port=os.environ["REDIS_PORT"],
+                     password=os.environ["REDIS_PASSWORD"],)
+    quiz = parse_quiz_from_file('quiz-questions/120br.txt')
+
     token = os.getenv('VK_GROUP_TOKEN')
     vk_session = vk.VkApi(token=token)
     vk_api = vk_session.get_api()
     longpoll = VkLongPoll(vk_session)
 
     for event in longpoll.listen():
-        if event.type == VkEventType.MESSAGE_NEW:
-            print('Новое сообщение:')
-            if event.to_me:
-                print('Для меня от: ', event.user_id)
-                send_keyboard(event, vk_api)
-            else:
-                print('От меня для: ', event.user_id)
-            print('Текст:', event.text)
+        if event.type == VkEventType.MESSAGE_NEW and event.to_me:
+            if event.text.lower() == "Старт":
+                start(event, vk_api)
+                continue
+            if event.text == "Новый вопрос":
+                ask_question(event, vk_api, db, quiz)
+                continue
+            if event.text == "Сдаться":
+                give_up(event, vk_api, db)
+                continue
+            if event.text == "Мой счет":
+                show_user_score(event, vk_api, db)
+                continue
+            check_answer(event, vk_api, db)
