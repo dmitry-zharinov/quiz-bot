@@ -12,7 +12,8 @@ from telegram.ext import (CommandHandler, ConversationHandler, Filters,
 from main import parse_quiz_from_file
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
 )
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ def handle_new_question_request(update, context):
     db = context.bot_data["db"]
     quiz = context.bot_data["quiz"]
 
-    num, quiz_item = random.choice(list(quiz.items()))
+    _, quiz_item = random.choice(list(quiz.items()))
     update.message.reply_text(quiz_item["question"])
 
     logger.info("Question to %s: %s", update.message.from_user.first_name, quiz_item["question"])
@@ -115,7 +116,7 @@ def main():
     db = redis.Redis(host=os.environ["REDIS_URL"],
                      port=os.environ["REDIS_PORT"],
                      password=os.environ["REDIS_PASSWORD"],)
-    quiz = parse_quiz_from_file('quiz-questions/120br.txt')
+    quiz = parse_quiz_from_file('questions.txt')
 
     dispatcher = updater.dispatcher
 
