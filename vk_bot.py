@@ -21,7 +21,7 @@ KEYBOARD = VkKeyboard()
 KEYBOARD.add_button('Новый вопрос', color=VkKeyboardColor.POSITIVE)
 KEYBOARD.add_button('Сдаться', color=VkKeyboardColor.NEGATIVE)
 KEYBOARD.add_line()
-KEYBOARD.add_button('Мой счёт', color=VkKeyboardColor.PRIMARY)
+KEYBOARD.add_button('Мой счет', color=VkKeyboardColor.PRIMARY)
 
 
 def send_message(event, vk_api, message):
@@ -52,18 +52,22 @@ def ask_question(event, vk_api, db, quiz):
 
 
 def check_answer(event, vk_api, db):
+    message = 'Сначала надо задать вопрос. Нажмите кнопку "Новый вопрос"'
+
     user_answer = event.text
-    correct_answer = db.get(f"{event.user_id}_answer").decode()
-    message = "Неправильно… Попробуешь ещё раз?"
-    if user_answer.lower() in correct_answer.lower():
-        comment = db.get(f"{event.user_id}_comment").decode()
-        message = (
-            f"Правильно!\n"
-            f"{comment}\n"
-            'Для следующего вопроса нажми «Новый вопрос»'
-        )
-        db.delete(f"{event.user_id}_answer")
-        db.delete(f"{event.user_id}_comment")
+    correct_answer = db.get(f"{event.user_id}_answer")
+    if correct_answer:
+        correct_answer = correct_answer.decode()
+        message = "Неправильно… Попробуешь ещё раз?"
+        if user_answer.lower() in correct_answer.lower():
+            comment = db.get(f"{event.user_id}_comment").decode()
+            message = (
+                f"Правильно!\n"
+                f"{comment}\n"
+                'Для следующего вопроса нажми «Новый вопрос»'
+            )
+            db.delete(f"{event.user_id}_answer")
+            db.delete(f"{event.user_id}_comment")
     send_message(event, vk_api, message)
 
 
@@ -94,7 +98,7 @@ if __name__ == "__main__":
     db = redis.Redis(host=os.environ["REDIS_URL"],
                      port=os.environ["REDIS_PORT"],
                      password=os.environ["REDIS_PASSWORD"],)
-    quiz = parse_quiz_from_file('quiz-questions/120br.txt')
+    quiz = parse_quiz_from_file('questions.txt')
 
     token = os.getenv('VK_GROUP_TOKEN')
     vk_session = vk.VkApi(token=token)
@@ -115,4 +119,5 @@ if __name__ == "__main__":
             if event.text == "Мой счет":
                 show_user_score(event, vk_api, db)
                 continue
-            check_answer(event, vk_api, db)
+            else:
+                check_answer(event, vk_api, db)
