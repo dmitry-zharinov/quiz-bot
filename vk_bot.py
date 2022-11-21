@@ -11,7 +11,8 @@ from vk_api.longpoll import VkEventType, VkLongPoll
 from main import parse_quiz_from_file
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
 )
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,6 @@ KEYBOARD.add_button('Новый вопрос', color=VkKeyboardColor.POSITIVE)
 KEYBOARD.add_button('Сдаться', color=VkKeyboardColor.NEGATIVE)
 KEYBOARD.add_line()
 KEYBOARD.add_button('Мой счёт', color=VkKeyboardColor.PRIMARY)
-
 
 
 def send_message(event, vk_api, message):
