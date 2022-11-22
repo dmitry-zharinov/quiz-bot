@@ -1,4 +1,6 @@
 from itertools import count
+import os
+from dotenv import load_dotenv
 
 
 def parse_quiz_from_file(filepath):
@@ -29,18 +31,19 @@ def parse_quiz_from_file(filepath):
                     "question": question,
                     "answer": answer,
                     "comment": comment,
-
                 }
 
                 number = next(counter)
                 question = ''
                 answer = ''
                 comment = ''
+
     return quiz
 
 
 def main():
-    quiz = parse_quiz_from_file('quiz-questions/120br.txt')
+    load_dotenv()
+    quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
     print(quiz)
 
 

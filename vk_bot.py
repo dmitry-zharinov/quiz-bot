@@ -98,7 +98,7 @@ if __name__ == "__main__":
     db = redis.Redis(host=os.environ["REDIS_URL"],
                      port=os.environ["REDIS_PORT"],
                      password=os.environ["REDIS_PASSWORD"],)
-    quiz = parse_quiz_from_file('questions.txt')
+    quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
 
     token = os.getenv('VK_GROUP_TOKEN')
     vk_session = vk.VkApi(token=token)
