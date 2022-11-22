@@ -8,14 +8,11 @@ from dotenv import load_dotenv
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkEventType, VkLongPoll
 
-from main import parse_quiz_from_file
+from parser import parse_quiz_from_file
+from bot_logging import TelegramLogsHandler
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('vk-bot')
 
 KEYBOARD = VkKeyboard()
 KEYBOARD.add_button('Новый вопрос', color=VkKeyboardColor.POSITIVE)
@@ -92,15 +89,7 @@ def show_user_score(event, vk_api, db):
     send_message(event, vk_api, "Статистика")
 
 
-if __name__ == "__main__":
-    load_dotenv()
-
-    db = redis.Redis(host=os.environ["REDIS_URL"],
-                     port=os.environ["REDIS_PORT"],
-                     password=os.environ["REDIS_PASSWORD"],)
-    quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
-
-    token = os.getenv('VK_GROUP_TOKEN')
+def run_bot(token):
     vk_session = vk.VkApi(token=token)
     vk_api = vk_session.get_api()
     longpoll = VkLongPoll(vk_session)
@@ -121,3 +110,24 @@ if __name__ == "__main__":
                 continue
             else:
                 check_answer(event, vk_api, db)
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    tg_bot_token = os.environ["TG_BOT_TOKEN"]
+    tg_admin_user = os.environ["ADMIN_USER"]
+    logging.basicConfig(level=logging.INFO)
+    logger.addHandler(
+        TelegramLogsHandler(tg_bot_token, tg_admin_user)
+    )
+
+    db = redis.Redis(host=os.environ["REDIS_URL"],
+                     port=os.environ["REDIS_PORT"],
+                     password=os.environ["REDIS_PASSWORD"],)
+    quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
+
+    vk_token = os.environ["VK_GROUP_TOKEN"]
+    try:
+        run_bot(vk_token)
+    except Exception as err:
+        logger.exception(err)

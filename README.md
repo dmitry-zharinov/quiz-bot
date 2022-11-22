@@ -21,7 +21,7 @@ pip install -r requirements.txt
 - `QUIZ_FILE` - путь к файлу с вопросами для викторины.
 - `TG_BOT_TOKEN` — токен для Telegram-бота, полученный от Bot Father.
 - `VK_GROUP_TOKEN` - токен группы ВКонтакте - [см. документацию](https://dev.vk.com/api/access-token/getting-started#%D0%9A%D0%BB%D1%8E%D1%87%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%B0%20%D1%81%D0%BE%D0%BE%D0%B1%D1%89%D0%B5%D1%81%D1%82%D0%B2%D0%B0)
-- `TG_CHAT_ID` — id чата, куда будут отправляться логи (можно узнать у @userinfobot).
+- `ADMIN_USER` — id чата Telegram, куда будут отправляться логи (можно узнать у @userinfobot).
 - `REDIS_URL` - url подключения к базе данных Redis, можно получить [в личном кабинете](https://app.redislabs.com) после регистрации 
 - `REDIS_PORT` - порт базы данных Redis
 - `REDIS_PASSWORD` - пароль для подключения к базе данных Redis

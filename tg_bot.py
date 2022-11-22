@@ -2,6 +2,7 @@
 import logging
 import os
 import random
+from parser import parse_quiz_from_file
 
 import redis
 from dotenv import load_dotenv
@@ -9,14 +10,10 @@ from telegram import ParseMode, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater)
 
-from main import parse_quiz_from_file
+from bot_logging import TelegramLogsHandler
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('tg-bot')
 
 QUIZ = 1
 
@@ -52,13 +49,12 @@ def handle_new_question_request(update, context):
     context.user_data["correct_answer"] = quiz_item["answer"]
     context.user_data["comment"] = quiz_item["comment"]
 
-    # записать вопрос в БД
     db.set(update.effective_user.id, quiz_item["question"])
 
     return QUIZ
 
 
-def handle_solution_attempt(update, context):
+def handle_answer(update, context):
     user_answer = update.message.text
     correct_answer = context.user_data["correct_answer"]
     comment = context.user_data["comment"]
@@ -92,7 +88,7 @@ def give_up(update, context):
     return QUIZ
 
 
-def stats(update, context):
+def user_score(update, context):
     update.message.reply_text('Статистика.')
     return QUIZ
 
@@ -110,16 +106,8 @@ def error(bot, update, error):
     logger.warning('Update "%s" caused error "%s"', update, error)
 
 
-def main():
-    load_dotenv()
-
-    updater = Updater(os.environ["TG_BOT_TOKEN"])
-
-    db = redis.Redis(host=os.environ["REDIS_URL"],
-                     port=os.environ["REDIS_PORT"],
-                     password=os.environ["REDIS_PASSWORD"],)
-    quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
-
+def run_bot(token, db, quiz):
+    updater = Updater(token)
     dispatcher = updater.dispatcher
 
     dispatcher.bot_data["db"] = db
@@ -132,18 +120,37 @@ def main():
                 MessageHandler(
                     Filters.regex("Новый вопрос"), handle_new_question_request
                 ),
-                MessageHandler(Filters.regex("Мой счет"), stats),
+                MessageHandler(Filters.regex("Мой счет"), user_score),
                 MessageHandler(Filters.regex("Сдаться"), give_up),
-                MessageHandler(Filters.text, handle_solution_attempt),
+                MessageHandler(Filters.text, handle_answer),
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel)]
     )
-
     dispatcher.add_handler(conv_handler)
-
     updater.start_polling()
     updater.idle()
+
+
+def main():
+    load_dotenv()
+
+    token = os.environ["TG_BOT_TOKEN"]
+    admin_user = os.environ["ADMIN_USER"]
+    logging.basicConfig(level=logging.INFO)
+    logger.addHandler(
+        TelegramLogsHandler(token, admin_user)
+    )
+
+    db = redis.Redis(host=os.environ["REDIS_URL"],
+                     port=os.environ["REDIS_PORT"],
+                     password=os.environ["REDIS_PASSWORD"],)
+    quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
+
+    try:
+        run_bot(token, db, quiz)
+    except Exception as err:
+        logger.exception(err)
 
 
 if __name__ == '__main__':
