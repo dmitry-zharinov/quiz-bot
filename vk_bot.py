@@ -127,7 +127,9 @@ if __name__ == "__main__":
     quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
 
     vk_token = os.environ["VK_GROUP_TOKEN"]
-    try:
-        run_bot(vk_token)
-    except Exception as err:
-        logger.exception(err)
+    while True:
+        try:
+            run_bot(vk_token)
+        except Exception as err:
+            logger.exception(err)
+            continue

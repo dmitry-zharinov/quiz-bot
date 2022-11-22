@@ -2,6 +2,7 @@
 import logging
 import os
 import random
+import time
 from parser import parse_quiz_from_file
 
 import redis
@@ -11,7 +12,6 @@ from telegram.ext import (CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater)
 
 from bot_logging import TelegramLogsHandler
-
 
 logger = logging.getLogger('tg-bot')
 
@@ -118,11 +118,15 @@ def run_bot(token, db, quiz):
         states={
             QUIZ: [
                 MessageHandler(
-                    Filters.regex("Новый вопрос"), handle_new_question_request
+                    Filters.regex("Новый вопрос"),
+                    handle_new_question_request
                 ),
-                MessageHandler(Filters.regex("Мой счет"), user_score),
-                MessageHandler(Filters.regex("Сдаться"), give_up),
-                MessageHandler(Filters.text, handle_answer),
+                MessageHandler(Filters.regex("Мой счет"),
+                               user_score),
+                MessageHandler(Filters.regex("Сдаться"),
+                               give_up),
+                MessageHandler(Filters.text,
+                               handle_answer),
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel)]
@@ -146,11 +150,13 @@ def main():
                      port=os.environ["REDIS_PORT"],
                      password=os.environ["REDIS_PASSWORD"],)
     quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
-
-    try:
-        run_bot(token, db, quiz)
-    except Exception as err:
-        logger.exception(err)
+    
+    while True:
+        try:
+            run_bot(token, db, quiz)
+        except Exception as err:
+            logger.exception(err)
+            continue
 
 
 if __name__ == '__main__':
