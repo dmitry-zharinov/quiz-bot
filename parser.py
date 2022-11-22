@@ -1,6 +1,4 @@
 from itertools import count
-import os
-from dotenv import load_dotenv
 
 
 def parse_quiz_from_file(filepath):

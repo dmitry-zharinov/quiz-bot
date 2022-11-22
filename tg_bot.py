@@ -2,7 +2,6 @@
 import logging
 import os
 import random
-import time
 from parser import parse_quiz_from_file
 
 import redis
@@ -17,11 +16,11 @@ logger = logging.getLogger('tg-bot')
 
 QUIZ = 1
 
-reply_keyboard = [
+REPLY_KEYBOARD = [
     ['Новый вопрос', 'Сдаться'],
     ['Мой счёт'],
 ]
-reply_markup = ReplyKeyboardMarkup(reply_keyboard)
+REPLY_MARKUP = ReplyKeyboardMarkup(REPLY_KEYBOARD)
 
 
 def start(update, context):
@@ -29,7 +28,7 @@ def start(update, context):
     update.message.reply_text(
         text='Привет! Я бот для викторин!',
         parse_mode=ParseMode.HTML,
-        reply_markup=reply_markup
+        reply_markup=REPLY_MARKUP
     )
     return QUIZ
 
@@ -65,7 +64,7 @@ def handle_answer(update, context):
         del context.user_data["correct_answer"]
         del context.user_data["comment"]
 
-    update.message.reply_text(reply, reply_markup=reply_markup)
+    update.message.reply_text(reply, reply_markup=REPLY_MARKUP)
     return QUIZ
 
 
@@ -79,11 +78,11 @@ def give_up(update, context):
             'Для продолжения нажмите кнопку «Новый вопрос»'
         )
         del context.user_data["correct_answer"]
-    update.message.reply_text(reply, reply_markup=reply_markup)
+    update.message.reply_text(reply, reply_markup=REPLY_MARKUP)
     return QUIZ
 
 
-def user_score(update, context):
+def show_user_score(update, context):
     update.message.reply_text('Статистика.')
     return QUIZ
 
@@ -117,7 +116,7 @@ def run_bot(token, db, quiz):
                     handle_new_question_request
                 ),
                 MessageHandler(Filters.regex("Мой счет"),
-                               user_score),
+                               show_user_score),
                 MessageHandler(Filters.regex("Сдаться"),
                                give_up),
                 MessageHandler(Filters.text,
@@ -126,6 +125,7 @@ def run_bot(token, db, quiz):
         },
         fallbacks=[CommandHandler('cancel', cancel)]
     )
+    dispatcher.add_handler(conv_handler)
     dispatcher.add_error_handler(error)
     updater.start_polling()
     updater.idle()
