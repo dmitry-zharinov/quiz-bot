@@ -41,11 +41,6 @@ def handle_new_question_request(update, context):
     _, quiz_item = random.choice(list(quiz.items()))
     update.message.reply_text(quiz_item["question"])
 
-    logger.info("Question to %s: %s",
-                update.message.from_user.first_name,
-                quiz_item["question"])
-    logger.info("Answer: %s", quiz_item["answer"])
-
     context.user_data["correct_answer"] = quiz_item["answer"]
     context.user_data["comment"] = quiz_item["comment"]
 

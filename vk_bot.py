@@ -39,13 +39,9 @@ def ask_question(event, vk_api, db, quiz):
     _, quiz_item = random.choice(list(quiz.items()))
     correct_answer = quiz_item["answer"]
     question = quiz_item["question"]
-
     db.set(f"{event.user_id}_answer", correct_answer)
     db.set(f"{event.user_id}_comment", quiz_item["comment"])
-
     send_message(event, vk_api, question)
-    logger.info("Question to %s: %s", event.user_id, question)
-    logger.info("Answer: %s", correct_answer)
 
 
 def check_answer(event, vk_api, db):
