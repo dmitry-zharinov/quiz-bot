@@ -39,13 +39,3 @@ def parse_quiz_from_file(filepath):
                 comment = ''
 
     return quiz
-
-
-def main():
-    load_dotenv()
-    quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
-    print(quiz)
-
-
-if __name__ == "__main__":
-    main()

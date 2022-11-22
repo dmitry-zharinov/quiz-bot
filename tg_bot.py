@@ -97,8 +97,8 @@ def cancel(update, context):
     return ConversationHandler.END
 
 
-def error(bot, update, error):
-    logger.warning('Update "%s" caused error "%s"', update, error)
+def error(update, context):
+    logger.warning('Update "%s" caused error"', update)
 
 
 def run_bot(token, db, quiz):
@@ -126,7 +126,7 @@ def run_bot(token, db, quiz):
         },
         fallbacks=[CommandHandler('cancel', cancel)]
     )
-    dispatcher.add_handler(conv_handler)
+    dispatcher.add_error_handler(error)
     updater.start_polling()
     updater.idle()
 
@@ -145,13 +145,8 @@ def main():
                      port=os.environ["REDIS_PORT"],
                      password=os.environ["REDIS_PASSWORD"],)
     quiz = parse_quiz_from_file(os.environ["QUIZ_FILE"])
-    
-    while True:
-        try:
-            run_bot(token, db, quiz)
-        except Exception as err:
-            logger.exception(err)
-            continue
+
+    run_bot(token, db, quiz)
 
 
 if __name__ == '__main__':

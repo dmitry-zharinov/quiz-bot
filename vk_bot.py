@@ -94,16 +94,12 @@ def run_bot(token):
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.text.lower() == "Старт":
                 start(event, vk_api)
-                continue
-            if event.text == "Новый вопрос":
+            elif event.text == "Новый вопрос":
                 ask_question(event, vk_api, db, quiz)
-                continue
-            if event.text == "Сдаться":
+            elif event.text == "Сдаться":
                 give_up(event, vk_api, db)
-                continue
-            if event.text == "Мой счет":
+            elif event.text == "Мой счет":
                 show_user_score(event, vk_api, db)
-                continue
             else:
                 check_answer(event, vk_api, db)
 
