@@ -2,10 +2,12 @@
  Бот для Telegram и VK, который проводит викторину - задаёт вопросы и анализирует ответы пользователей.
 
 ### Примеры ботов
-[Бот в Telegram]([ссылка](https://t.me/dw_dvmn_quiz_bot))
+[Бот в Telegram](https://t.me/dw_dvmn_quiz_bot)
+
 ![tg](https://user-images.githubusercontent.com/16899464/203139608-0b2fd5ce-614e-4310-a7e3-e3959ad439e8.gif)
 
-[Бот сообщества в VK]([ссылка](https://vk.com/club217208554))
+[Бот сообщества в VK](https://vk.com/club217208554)
+
 ![vk](https://user-images.githubusercontent.com/16899464/203139624-32eee7f7-b392-4200-84a8-24f4b0a0f520.gif)
 
 ### Установка
